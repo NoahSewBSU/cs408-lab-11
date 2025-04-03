@@ -22,15 +22,22 @@
     <script>
         document.getElementById("send-data").onclick = function () {
             let xhr = new XMLHttpRequest();
-            xhr.open("PUT", "https://sy9xehdhgi.execute-api.us-east-2.amazonaws.com/");
+            xhr.open("PUT", "https://sy9xehdhgi.execute-api.us-east-2.amazonaws.com/items");
+            xhr.addEventListener("load", function () {
+                alert("Sent data with id 11111");
+            });
+            xhr.onerror = function () {
+                console.error("Error sending data with id 11111");
+            };
             xhr.setRequestHeader("Content-Type", "application/json");
             xhr.send(JSON.stringify({
-                "id": "6666666",
+                "id": "11111",
                 "price": 19,
                 "name": "test put value"
             }));
         }
     </script>
+    <hr>
 
     <button id="load-data">Load Data</button>
     <p>Loads data from the server</p>
@@ -41,7 +48,12 @@
             xhr.addEventListener("load", function () {
                 lambda.innerHTML = xhr.response;
             });
-            xhr.open("GET", "https://sy9xehdhgi.execute-api.us-east-2.amazonaws.com/");
+            xhr.open("GET", "https://sy9xehdhgi.execute-api.us-east-2.amazonaws.com/items");
+            xhr.setRequestHeader("Content-Type", "application/json");
+            xhr.onerror = function () {
+                console.error("Error loading data with id 11111");
+            };
+            
             xhr.send();
         }
 
@@ -53,11 +65,154 @@
     <script>
         document.getElementById("delete-data").onclick = function () {
             let xhr = new XMLHttpRequest();
-            xhr.open("DELETE", "https://sy9xehdhgi.execute-api.us-east-2.amazonaws.com/");
+            xhr.open("DELETE", "https://sy9xehdhgi.execute-api.us-east-2.amazonaws.com/items/11111");
+            xhr.addEventListener("load", function () {
+                alert("Deleted data with id 11111");
+            });
             xhr.setRequestHeader("Content-Type", "application/json");
+            xhr.onerror = function () {
+                console.error("Error deleting data with id 11111");
+            };
             xhr.send();
         }
     </script>
+    <hr>
+
+    <h2 style="display: inline;">My Simple Inventory App</h2> 
+    <button id="load-all-items" style="margin-left: 10px; margin-bottom: 50px;">Load All Items</button>
+    
+    <table border="1" style="width: 100%; border-collapse: collapse;">
+        <thead>
+            <tr style="background-color: grey; color: white;">
+                <th>Id</th>
+                <th>Name</th>
+                <th>Price</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody id="items-table-body">
+            <!-- Rows will be dynamically added here -->
+        </tbody>
+    </table>
+    
+    <!--Table to go through items and record them-->
+    <script>
+        document.getElementById("load-all-items").onclick = function () {
+            let xhr = new XMLHttpRequest();
+            xhr.open("GET", "https://sy9xehdhgi.execute-api.us-east-2.amazonaws.com/items");
+            xhr.setRequestHeader("Content-Type", "application/json");
+            xhr.onload = function () {
+                if (xhr.status === 200) {
+                    const items = JSON.parse(xhr.responseText); // Parse the JSON response
+                    const tableBody = document.getElementById("items-table-body");
+                    tableBody.innerHTML = ""; // Clear existing rows
+    
+                    items.forEach(item => {
+                        const row = document.createElement("tr");
+                        row.innerHTML = `
+                            <td>${item.id}</td>
+                            <td>${item.name}</td>
+                            <td>${item.price}</td>
+                            <td style="text-align: center;">
+                                <button onclick="deleteItem('${item.id}')">Delete</button>
+                            </td>
+                        `;
+                        tableBody.appendChild(row);
+                    });
+                } else {
+                    console.error("Failed to load items:", xhr.statusText);
+                }
+            };
+
+            //Error handling
+            xhr.onerror = function () {
+                console.error("Error loading items.");
+            };
+            xhr.send();
+        };
+    
+        // Delete an item by its ID using the DELETE function
+        function deleteItem(itemId) {
+            let xhr = new XMLHttpRequest();
+            xhr.open("DELETE", `https://sy9xehdhgi.execute-api.us-east-2.amazonaws.com/items/${itemId}`);
+            xhr.setRequestHeader("Content-Type", "application/json");
+            xhr.onload = function () {
+                if (xhr.status === 200) {
+                    alert(`Deleted item with id ${itemId}`);
+                    document.getElementById("load-all-items").click(); // Reload the table
+                } else {
+                    console.error("Failed to delete item:", xhr.statusText);
+                }
+            };
+
+            //Error handling
+            xhr.onerror = function () {
+                console.error("Error deleting item.");
+            };
+            xhr.send();
+        }
+    </script>
+
+<hr style="margin-top: 50px; margin-bottom: 50px;">
+
+<!-- Form to add a new item to the database | I probably should have used the style.css file for this... -->
+<div style="margin: 20px auto; padding: 20px; border: 1px solid #ccc; border-radius: 5px; width: 50%; background-color: #f9f9f9;">
+    <h3 style="margin-top: 0px; margin-bottom: 40px">Add New Item to Database</h3>
+    <div style="display: flex; align-items: center; margin-bottom: 10px;">
+        <label for="new-item-id" style="width: 40px;">ID:</label>
+        <input type="text" id="new-item-id" placeholder="Ex. 11111" style="flex: 1;margin-left: 20px;" />
+    </div>
+    <div style="display: flex; align-items: center; margin-bottom: 10px;">
+        <label for="new-item-name" style="width: 50px;">Name:</label>
+        <input type="text" id="new-item-name" placeholder="Ex. test put value" style="flex: 1; margin-left: 10px;" />
+    </div>
+    <div style="display: flex; align-items: center; margin-bottom: 10px;">
+        <label for="new-item-price" style="width: 50px;">Price:</label>
+        <input type="number" id="new-item-price" placeholder="Ex. 19" style="flex: 1; margin-left: 10px;" />
+    </div>
+    <div style="text-align: right;">
+    <button id="add-item-button" style=" margin-top: 10px;">Add Item</button>
+    </div>
+</div>
+
+<!-- This script then adds the items to that database, based on user input -->
+<script>
+    document.getElementById("add-item-button").onclick = function () {
+        const id = document.getElementById("new-item-id").value;
+        const name = document.getElementById("new-item-name").value;
+        const price = document.getElementById("new-item-price").value;
+
+        if (!id || !name || !price) {
+            alert("Please fill out all fields.");
+            return;
+        }
+
+        const newItem = { id, name, price: parseFloat(price) };
+
+        let xhr = new XMLHttpRequest();
+        xhr.open("PUT", "https://sy9xehdhgi.execute-api.us-east-2.amazonaws.com/items");
+        xhr.setRequestHeader("Content-Type", "application/json");
+        xhr.onload = function () {
+            if (xhr.status === 200) {
+                alert("Item added successfully!");
+                document.getElementById("load-all-items").click(); // Reload the table
+                // Clear input fields
+                document.getElementById("new-item-id").value = "";
+                document.getElementById("new-item-name").value = "";
+                document.getElementById("new-item-price").value = "";
+            } else {
+                console.error("Failed to add item:", xhr.statusText);
+            }
+        };
+        xhr.onerror = function () {
+            console.error("Error adding item.");
+        };
+        xhr.send(JSON.stringify(newItem));
+    };
+</script>
+
+    
+
 </body>
 
 </html>
